@@ -163,6 +163,13 @@ def main():
     for s in v_slides:
         print(s.__verbose__())
 
+    slides = set(h)
+    slides.update(v_slides)
+    if len(slides) != len(h) + len(v)//2:
+        raise Exception("Total ({}), horizontal({}) and vertical/2 ({}) do not match".format(
+            len(slides), len(h), len(v)//2
+        ))
+
 
 if __name__ == "__main__":
     main()
