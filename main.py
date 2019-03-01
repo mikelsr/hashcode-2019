@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from itertools import chain
+from sys import argv
 
 ENCODING = "ascii"
 INPUT_FILES = [
@@ -10,7 +11,7 @@ INPUT_FILES = [
     "data/d_pet_pictures.txt",
     "data/e_shiny_selfies.txt"
 ]
-
+LIM = 1000
 
 # Pic only used for vertical photos
 class Pic:
@@ -77,15 +78,15 @@ def parse_input(raw):
     for raw_pic in raw_pics[1:]:  # skip first element (n of photos)
         pic = raw_pic.split()
         if pic[0] == "H":
-            h.append(Slide({i}, pic[2:]))
+            h.append(Slide({i}, set(pic[2:])))
         else:
             v.append(Pic(i, *pic))
         i += 1
     return h, v
 
 
-def parse_output(pics):
-    return ''.join(["{}\n".format(x) for x in pics])
+def parse_output(slides):
+    return "{}\n{}".format(len(slides), ''.join(["{}\n".format(x) for x in slides]))
 
 
 """
@@ -123,13 +124,17 @@ def pair_pics(pics):
 
         common = len(pic1.tags)  # maximum possible tags in common
         pic = None  # pic2 will be the Pic paired with pic1
+        j = 0
         for pic2 in pics[i:]:
             if pic2 in used:
                 continue
+            if j > LIM:
+                break
             c = len(common_tags(pic1.tags, pic2.tags))
             if c < common:
                 common = c
                 pic = pic2
+            j += 1
         if pic is None:
             raise Exception("Chosen picture is 'None'")
         used.update({pic1, pic})
@@ -138,9 +143,37 @@ def pair_pics(pics):
     return slides
 
 
-# TODO
 def sort_slides(slides):
-    pass
+    sorted_slides = sorted(list(slides), key=lambda x: len(x.tags))
+
+    ordered = [sorted_slides[0]]
+    used = {sorted_slides[0]}
+
+    total = len(slides)
+    i = 0
+    while len(used) != total:
+        slide1 = ordered[i]
+        print(slide1)
+        points = -1
+        slide = None
+        j = 0
+        for slide2 in sorted_slides:
+            if slide2 in used:
+                continue
+            if j > LIM:
+                break
+            p = score(slide1, slide2)
+            if p > points:
+                points = p
+                slide = slide2
+            j += 1
+        if slide is None:
+            raise Exception("Chosen exception is 'None'")
+        used.update({slide})
+        ordered.append(slide)
+        i += 1
+    print(ordered[-1])
+    return ordered
 
 
 """
@@ -148,20 +181,22 @@ MAIN
 """
 
 
-def main():
-    raw = input_from_file(INPUT_FILES[2])
+def main(n=0):
+    raw = input_from_file(INPUT_FILES[n])
     h, v = parse_input(raw)
-    print("\n* Horizontals:")
-    for x in h:
-        print(x.__verbose__())
-    print("\n* Verticals:")
-    for x in v:
-        print(x.__verbose__())
+    # print("input parsed")
+    # print("\n* Horizontals:")
+    # for x in h:
+    #     print(x.__verbose__())
+    # print("\n* Verticals:")
+    # for x in v:
+    #     print(x.__verbose__())
 
     v_slides = pair_pics(v)
-    print("\n*Vertical slides:")
-    for s in v_slides:
-        print(s.__verbose__())
+    # print("vertical pictures paired")
+    # print("\n*Vertical slides:")
+    # for s in v_slides:
+    #     print(s.__verbose__())
 
     slides = set(h)
     slides.update(v_slides)
@@ -169,7 +204,16 @@ def main():
         raise Exception("Total ({}), horizontal({}) and vertical/2 ({}) do not match".format(
             len(slides), len(h), len(v)//2
         ))
+    # print("slides combined")
+
+    # write output to file
+    slides = sort_slides(slides)
+    out = parse_output(slides)
+    output_to_file(out, "out/{}.out".format(n))
 
 
 if __name__ == "__main__":
-    main()
+    n = 0
+    if len(argv) > 1:
+        n = int(argv[1])
+    main(n)
