@@ -11,7 +11,8 @@ INPUT_FILES = [
     "data/d_pet_pictures.txt",
     "data/e_shiny_selfies.txt"
 ]
-LIM = 1000
+LIM = 80000
+
 
 # Pic only used for vertical photos
 class Pic:
@@ -153,7 +154,7 @@ def sort_slides(slides):
     i = 0
     while len(used) != total:
         slide1 = ordered[i]
-        print(slide1)
+        # print(slide1)
         points = -1
         slide = None
         j = 0
@@ -172,7 +173,7 @@ def sort_slides(slides):
         used.update({slide})
         ordered.append(slide)
         i += 1
-    print(ordered[-1])
+    # print(ordered[-1])
     return ordered
 
 
@@ -181,7 +182,7 @@ MAIN
 """
 
 
-def main(n=0):
+def main(n=0, out_dir="out"):
     raw = input_from_file(INPUT_FILES[n])
     h, v = parse_input(raw)
     # print("input parsed")
@@ -209,11 +210,14 @@ def main(n=0):
     # write output to file
     slides = sort_slides(slides)
     out = parse_output(slides)
-    output_to_file(out, "out/{}.out".format(n))
+    output_to_file(out, "{}/{}.out".format(out_dir, n))
 
 
 if __name__ == "__main__":
     n = 0
+    out_dir="out"
     if len(argv) > 1:
         n = int(argv[1])
-    main(n)
+    if len(argv) > 2:
+        out_dir = argv[2]
+    main(n, out_dir)
