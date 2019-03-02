@@ -11,7 +11,7 @@ INPUT_FILES = [
     "data/d_pet_pictures.txt",
     "data/e_shiny_selfies.txt"
 ]
-LIM = 80000
+LIM = 1e7
 
 
 # Pic only used for vertical photos

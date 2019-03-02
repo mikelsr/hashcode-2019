@@ -18,5 +18,5 @@ for i in $(seq 1 $END); do
         echo "waiting for ${pid}"
         wait $pid
     done
-    echo "\n---\n"
+    echo -e "\n---\n"
 done
