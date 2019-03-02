@@ -11,7 +11,7 @@ for i in $(seq 1 $END); do
     for j in $(seq 0 4); do
         echo "launching './main.py ${j} ${outdir}'"
         ./main.py $j $outdir &
-         pids[${i}]=$!
+         pids[${j}]=$!
     done
 
     for pid in ${pids[*]}; do
