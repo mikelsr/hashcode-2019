@@ -169,7 +169,7 @@ def sort_slides(slides):
                 slide = slide2
             j += 1
         if slide is None:
-            raise Exception("Chosen exception is 'None'")
+            raise Exception("Chosen slide is 'None'")
         used.update({slide})
         ordered.append(slide)
         i += 1
