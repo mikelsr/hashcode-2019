@@ -3,6 +3,9 @@
 from itertools import chain
 from sys import argv
 
+# local import
+from lib.ga import genetic_algorithm, Node, set_scores
+
 ENCODING = "ascii"
 INPUT_FILES = [
     "data/a_example.txt",
@@ -12,6 +15,12 @@ INPUT_FILES = [
     "data/e_shiny_selfies.txt"
 ]
 LIM = 1e7
+
+# genetic algorithm
+POPULATION_SIZE = 100
+ELITE_SIZE = 20
+MUTATION_RATE = 0.01
+GENERATIONS = 20
 
 
 # Pic only used for vertical photos
@@ -69,9 +78,9 @@ def parse_input(raw):
 
     # check number of photos
     if int(raw_pics[0]) != len(raw_pics) - 1:
-        raise Exception("Expected ({}) and actual ({}) number of photos do not match".format(
-            raw_pics[0], len(raw_pics) - 1
-        ))
+        raise Exception(
+            "Expected ({}) and actual ({}) number of photos do not match"
+            .format(raw_pics[0], len(raw_pics) - 1))
 
     h = []  # horizontal photos == slides
     v = []  # vertical photos
@@ -87,7 +96,8 @@ def parse_input(raw):
 
 
 def parse_output(slides):
-    return "{}\n{}".format(len(slides), ''.join(["{}\n".format(x) for x in slides]))
+    return "{}\n{}".format(len(slides),
+                           ''.join(["{}\n".format(x) for x in slides]))
 
 
 """
@@ -140,41 +150,27 @@ def pair_pics(pics):
             raise Exception("Chosen picture is 'None'")
         used.update({pic1, pic})
         slides.update({pic1.merge(pic)})
-
     return slides
 
 
-def sort_slides(slides):
-    sorted_slides = sorted(list(slides), key=lambda x: len(x.tags))
+def create_graph(slides):
+    ordered_slides = list(slides)
+    nodes = [Node(i, ordered_slides[i].tags)
+             for i in range(len(ordered_slides))]
+    return nodes, ordered_slides
 
-    ordered = [sorted_slides[0]]
-    used = {sorted_slides[0]}
 
-    total = len(slides)
-    i = 0
-    while len(used) != total:
-        slide1 = ordered[i]
-        # print(slide1)
-        points = -1
-        slide = None
-        j = 0
-        for slide2 in sorted_slides:
-            if slide2 in used:
-                continue
-            if j > LIM:
-                break
-            p = score(slide1, slide2)
-            if p > points:
-                points = p
-                slide = slide2
-            j += 1
-        if slide is None:
-            raise Exception("Chosen slide is 'None'")
-        used.update({slide})
-        ordered.append(slide)
-        i += 1
-    # print(ordered[-1])
-    return ordered
+# calc_scores creates an symmetrical matrix with the scores of each slide
+# respecting to the others
+def calc_scores(ordered_slides):
+    size = len(ordered_slides)
+    scores = [[0]*size for i in range(size)]
+    for i in range(size):
+        for j in range(size):
+            s = score(ordered_slides[i], ordered_slides[j])
+            scores[i][j] = s
+            scores[j][i] = s
+    return scores
 
 
 """
@@ -183,41 +179,50 @@ MAIN
 
 
 def main(n=0, out_dir="out"):
+    print("Parse input file")
     raw = input_from_file(INPUT_FILES[n])
     h, v = parse_input(raw)
-    # print("input parsed")
-    # print("\n* Horizontals:")
-    # for x in h:
-    #     print(x.__verbose__())
-    # print("\n* Verticals:")
-    # for x in v:
-    #     print(x.__verbose__())
 
+    print("Pair vertical photos")
     v_slides = pair_pics(v)
-    # print("vertical pictures paired")
-    # print("\n*Vertical slides:")
-    # for s in v_slides:
-    #     print(s.__verbose__())
 
     slides = set(h)
+    print("Merge slides")
     slides.update(v_slides)
     if len(slides) != len(h) + len(v)//2:
-        raise Exception("Total ({}), horizontal({}) and vertical/2 ({}) do not match".format(
-            len(slides), len(h), len(v)//2
-        ))
+        raise Exception(
+            "Total ({}), horizontal({}) and vertical/2 ({}) do not match"
+            .format(len(slides), len(h), len(v)//2))
     # print("slides combined")
 
+    print("Create graph")
+    graph, ordered = create_graph(slides)
+    print("Create score matrix")
+    s = calc_scores(ordered)
+    # set score matrix at lib.ga
+    set_scores(s)
+    print("Run genetic algorithm")
+    order = genetic_algorithm(graph,
+                              size=POPULATION_SIZE,
+                              elite_size=ELITE_SIZE,
+                              mutation_rate=MUTATION_RATE,
+                              generations=GENERATIONS)
+    print("Apply order")
+    final = [ordered[n.index] for n in order]
+
     # write output to file
-    slides = sort_slides(slides)
-    out = parse_output(slides)
-    output_to_file(out, "{}/{}.out".format(out_dir, n))
+    outfile = "{}/{}.out".format(out_dir, n)
+    print("Write output to {}".format(outfile))
+    out = parse_output(final)
+    output_to_file(out, outfile)
 
 
 if __name__ == "__main__":
-    n = 0
+    n = 2
     out_dir="out"
     if len(argv) > 1:
         n = int(argv[1])
     if len(argv) > 2:
         out_dir = argv[2]
     main(n, out_dir)
+

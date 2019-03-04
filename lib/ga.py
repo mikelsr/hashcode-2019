@@ -12,6 +12,9 @@ from pandas import DataFrame
 from random import random, sample
 
 
+scores = []
+
+
 class Node:
     def __init__(self, index, tags):
         self.index = index
@@ -21,10 +24,7 @@ class Node:
     def cost(self, node):
         if node is self:
             return 0.0
-        score_common = len(self.tags.intersection(node.tags))
-        score_s1 = len(self.tags) - score_common
-        score_s2 = len(node.tags) - score_common
-        score = min(score_common, score_s1, score_s2)
+        score = scores[self.index][node.index]
         return 1/score if score != 0 else 2.0  # no score -> biggest cost
 
     def __str__(self):
@@ -79,9 +79,11 @@ def breed_population(pool, elite_size):
 
 
 def genetic_algorithm(population, size, elite_size, mutation_rate, generations):
-    p = next_generation(size, population)
+    p = new_population(size, population)
     for i in range(generations):
+        print("\rGeneration {}".format(i+1), end='')
         p = next_generation(p, elite_size, mutation_rate)
+    print()
     best_route_index = rank_routes(p)[0][0]
     return p[best_route_index]
 
@@ -104,7 +106,7 @@ def mutate_population(population, mutation_rate):
 
 
 def new_population(size, node_list):
-    return [new_population(node_list) for _ in range(size)]
+    return [new_route(node_list) for _ in range(size)]
 
 
 def new_route(node_list):
@@ -127,7 +129,7 @@ def rank_routes(population):
 
 
 def select(ranked_population, elite_size):
-    df = DataFrame(array(ranked_population), columns=["Index, Fitness"])
+    df = DataFrame(array(ranked_population), columns=["Index", "Fitness"])
     df["cum_sum"] = df.Fitness.cumsum()
     df["cum_perc"] = 100*df.cum_sum/df.Fitness.sum()
 
@@ -139,4 +141,9 @@ def select(ranked_population, elite_size):
                 results.append(ranked_population[i][0])
                 break
     return results
+
+
+def set_scores(s):
+    global scores
+    scores = s
 
