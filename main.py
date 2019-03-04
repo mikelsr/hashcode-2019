@@ -3,7 +3,8 @@
 from itertools import chain
 from sys import argv
 
-from tsp_solver.greedy import solve_tsp
+# local import
+from lib.ga import genetic_algorithm, Node, set_scores
 
 ENCODING = "ascii"
 INPUT_FILES = [
@@ -15,16 +16,11 @@ INPUT_FILES = [
 ]
 LIM = 1e7
 
-
-"""
-class Node:
-    def __init__(self, slide):
-        self.slide = slide
-        self.paths = {}  # path: key=Node value=cost
-
-    def __str__(self):
-        return "{} {}".format(self.slide, ' '.join(["\n\tslide: {}\tcost: {}".format(x, y) for x, y in self.paths.items()]))
-"""
+# genetic algorithm
+POPULATION_SIZE = 100
+ELITE_SIZE = 20
+MUTATION_RATE = 0.01
+GENERATIONS = 20
 
 
 # Pic only used for vertical photos
@@ -154,56 +150,27 @@ def pair_pics(pics):
             raise Exception("Chosen picture is 'None'")
         used.update({pic1, pic})
         slides.update({pic1.merge(pic)})
-
     return slides
-
-
-"""
-def create_graph(slides):
-    sorted_slides = sorted(list(slides), key=lambda x: len(x.tags))
-    nodes = []
-    for s1 in sorted_slides:
-        candidates = []
-        best_score = 0
-        for s2 in sorted_slides:
-            if s1 is s2:
-                continue
-            current_score = score(s1, s2)
-            if current_score > best_score:
-                candidates = [s2]
-                best_score = current_score
-            elif current_score == best_score:
-                candidates.append(s2)
-        n = Node(s1)
-        cost = 1/((best_score+1) if best_score != 0 else 1)
-        for c in candidates:
-            n.paths[c] = cost
-        nodes.append(n)
-    return nodes
-"""
 
 
 def create_graph(slides):
     ordered_slides = list(slides)
-    matrix = []
-    for s1 in ordered_slides:
-        row = []
-        for s2 in ordered_slides:
-            # cost between the same node = 0
-            if s1 is s2:
-                row.append(0)
-                continue
-            s = score(s1, s2)
-            row.append(1/s if s != 0 else 1.0)  # default cost is 1 (max)
-        matrix.append(row)
-    return matrix, ordered_slides
+    nodes = [Node(i, ordered_slides[i].tags)
+             for i in range(len(ordered_slides))]
+    return nodes, ordered_slides
 
 
-def print_matrix(matrix, ordered_slides):
-    print("\t{}".format('\t'.join(["({})".format(s) for s in ordered_slides])))
-    for i in range(len(ordered_slides)):
-        print("({})\t{}".format(ordered_slides[i],
-                                '\t'.join(str(c) for c in matrix[i])))
+# calc_scores creates an symmetrical matrix with the scores of each slide
+# respecting to the others
+def calc_scores(ordered_slides):
+    size = len(ordered_slides)
+    scores = [[0]*size for i in range(size)]
+    for i in range(size):
+        for j in range(size):
+            s = score(ordered_slides[i], ordered_slides[j])
+            scores[i][j] = s
+            scores[j][i] = s
+    return scores
 
 
 """
@@ -212,12 +179,15 @@ MAIN
 
 
 def main(n=0, out_dir="out"):
+    print("Parse input file")
     raw = input_from_file(INPUT_FILES[n])
     h, v = parse_input(raw)
 
+    print("Pair vertical photos")
     v_slides = pair_pics(v)
 
     slides = set(h)
+    print("Merge slides")
     slides.update(v_slides)
     if len(slides) != len(h) + len(v)//2:
         raise Exception(
@@ -225,17 +195,30 @@ def main(n=0, out_dir="out"):
             .format(len(slides), len(h), len(v)//2))
     # print("slides combined")
 
-    matrix, ordered = create_graph(slides)
-    order = solve_tsp(matrix)
-    final = [ordered[i] for i in order]
+    print("Create graph")
+    graph, ordered = create_graph(slides)
+    print("Create score matrix")
+    s = calc_scores(ordered)
+    # set score matrix at lib.ga
+    set_scores(s)
+    print("Run genetic algorithm")
+    order = genetic_algorithm(graph,
+                              size=POPULATION_SIZE,
+                              elite_size=ELITE_SIZE,
+                              mutation_rate=MUTATION_RATE,
+                              generations=GENERATIONS)
+    print("Apply order")
+    final = [ordered[n.index] for n in order]
 
     # write output to file
+    outfile = "{}/{}.out".format(out_dir, n)
+    print("Write output to {}".format(outfile))
     out = parse_output(final)
-    output_to_file(out, "{}/{}.out".format(out_dir, n))
+    output_to_file(out, outfile)
 
 
 if __name__ == "__main__":
-    n = 3
+    n = 2
     out_dir="out"
     if len(argv) > 1:
         n = int(argv[1])
