@@ -146,4 +146,3 @@ def select(ranked_population, elite_size):
 def set_scores(s):
     global scores
     scores = s
-
