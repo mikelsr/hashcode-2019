@@ -14,6 +14,15 @@ INPUT_FILES = [
 LIM = 1e7
 
 
+class Node:
+    def __init__(self, slide):
+        self.slide = slide
+        self.paths = {}  # path: key=Node value=cost
+
+    def __str__(self):
+        return "{} {}".format(self.slide, ' '.join(["\n\tslide: {}\tcost: {}".format(x, y) for x, y in self.paths.items()]))
+
+
 # Pic only used for vertical photos
 class Pic:
     def __init__(self, index, *args):
@@ -144,37 +153,27 @@ def pair_pics(pics):
     return slides
 
 
-def sort_slides(slides):
+def create_graph(slides):
     sorted_slides = sorted(list(slides), key=lambda x: len(x.tags))
-
-    ordered = [sorted_slides[0]]
-    used = {sorted_slides[0]}
-
-    total = len(slides)
-    i = 0
-    while len(used) != total:
-        slide1 = ordered[i]
-        # print(slide1)
-        points = -1
-        slide = None
-        j = 0
-        for slide2 in sorted_slides:
-            if slide2 in used:
+    nodes = []
+    for s1 in sorted_slides:
+        candidates = []
+        best_score = 0
+        for s2 in sorted_slides:
+            if s1 is s2:
                 continue
-            if j > LIM:
-                break
-            p = score(slide1, slide2)
-            if p > points:
-                points = p
-                slide = slide2
-            j += 1
-        if slide is None:
-            raise Exception("Chosen slide is 'None'")
-        used.update({slide})
-        ordered.append(slide)
-        i += 1
-    # print(ordered[-1])
-    return ordered
+            current_score = score(s1, s2)
+            if current_score > best_score:
+                candidates = [s2]
+                best_score = current_score
+            elif current_score == best_score:
+                candidates.append(s2)
+        n = Node(s1)
+        cost = 1/((best_score+1) if best_score != 0 else 1)
+        for c in candidates:
+            n.paths[c] = cost
+        nodes.append(n)
+    return nodes
 
 
 """
@@ -185,19 +184,8 @@ MAIN
 def main(n=0, out_dir="out"):
     raw = input_from_file(INPUT_FILES[n])
     h, v = parse_input(raw)
-    # print("input parsed")
-    # print("\n* Horizontals:")
-    # for x in h:
-    #     print(x.__verbose__())
-    # print("\n* Verticals:")
-    # for x in v:
-    #     print(x.__verbose__())
 
     v_slides = pair_pics(v)
-    # print("vertical pictures paired")
-    # print("\n*Vertical slides:")
-    # for s in v_slides:
-    #     print(s.__verbose__())
 
     slides = set(h)
     slides.update(v_slides)
@@ -208,9 +196,11 @@ def main(n=0, out_dir="out"):
     # print("slides combined")
 
     # write output to file
-    slides = sort_slides(slides)
-    out = parse_output(slides)
-    output_to_file(out, "{}/{}.out".format(out_dir, n))
+    nodes = create_graph(slides)
+    for n in nodes:
+        print(n)
+#    out = parse_output(slides)
+#    output_to_file(out, "{}/{}.out".format(out_dir, n))
 
 
 if __name__ == "__main__":
@@ -221,3 +211,4 @@ if __name__ == "__main__":
     if len(argv) > 2:
         out_dir = argv[2]
     main(n, out_dir)
+
