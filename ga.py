@@ -1,7 +1,7 @@
 """
 this file contains the genetic algorithm used for solving TSP of
 the graph created with main.py
-Heavily based onEric Stoltz's Evolution of a salesman:
+Heavily based on Eric Stoltz's Evolution of a salesman:
 A complete genetic algorithm tutorial for Python
 """
 
