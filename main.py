@@ -82,9 +82,9 @@ def parse_input(raw):
 
     # check number of photos
     if int(raw_pics[0]) != len(raw_pics) - 1:
-        raise Exception("Expected ({}) and actual ({}) number of photos do not match".format(
-            raw_pics[0], len(raw_pics) - 1
-        ))
+        raise Exception(
+            "Expected ({}) and actual ({}) number of photos do not match"
+            .format(raw_pics[0], len(raw_pics) - 1))
 
     h = []  # horizontal photos == slides
     v = []  # vertical photos
@@ -100,7 +100,8 @@ def parse_input(raw):
 
 
 def parse_output(slides):
-    return "{}\n{}".format(len(slides), ''.join(["{}\n".format(x) for x in slides]))
+    return "{}\n{}".format(len(slides),
+                           ''.join(["{}\n".format(x) for x in slides]))
 
 
 """
@@ -201,7 +202,8 @@ def create_graph(slides):
 def print_matrix(matrix, ordered_slides):
     print("\t{}".format('\t'.join(["({})".format(s) for s in ordered_slides])))
     for i in range(len(ordered_slides)):
-        print("({})\t{}".format(ordered_slides[i], '\t'.join(str(c) for c in matrix[i])))
+        print("({})\t{}".format(ordered_slides[i],
+                                '\t'.join(str(c) for c in matrix[i])))
 
 
 """
@@ -218,15 +220,14 @@ def main(n=0, out_dir="out"):
     slides = set(h)
     slides.update(v_slides)
     if len(slides) != len(h) + len(v)//2:
-        raise Exception("Total ({}), horizontal({}) and vertical/2 ({}) do not match".format(
-            len(slides), len(h), len(v)//2
-        ))
+        raise Exception(
+            "Total ({}), horizontal({}) and vertical/2 ({}) do not match"
+            .format(len(slides), len(h), len(v)//2))
     # print("slides combined")
 
     matrix, ordered = create_graph(slides)
     order = solve_tsp(matrix)
     final = [ordered[i] for i in order]
-
 
     # write output to file
     out = parse_output(final)
