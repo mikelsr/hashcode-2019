@@ -25,7 +25,7 @@ class Node:
         if node is self:
             return 0.0
         score = scores[self.index][node.index]
-        return 1/score if score != 0 else 2.0  # no score -> biggest cost
+        return 1/(score+1) if score != 0 else 1.0  # no score -> biggest cost
 
     def __str__(self):
         return str(self.index)
